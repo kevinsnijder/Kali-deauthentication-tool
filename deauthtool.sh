@@ -70,26 +70,12 @@ read cappath
 
 #Handshake status
 status="${RED}False${NC}"
+
 #Timer
 starttime=$SECONDS
 
 #Initial handshake check
-echo "" && echo -e "\tChecking for a handshake..."
-result=$(cowpatty -c -r $cappath)
-
-if [[ $result = *'incomplete'* ]]
-then
-	echo -e " \t  ${RED}No successful handshake.${NC}"
-elif [[ $result = *'Collected'* ]]
-then
-	echo -e "\t  ${GREEN}Handshake success!${NC}"
-	status="${GREEN}True${NC}"
-	sleep 5
-	jumpto $finish
-else
-	echo -e "\t  ${ORANGE}Unexpected response.${NC}"
-	status="${ORANGE}ERROR${NC}"
-fi
+checkhandshake
 
 #Begin the loop
 jumpto $start
@@ -147,7 +133,6 @@ clear
 echo -e "${SUCCESS}‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌Success ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ${NC}"
 echo -e    "${LINE}+-------------------------------------------------------+${NC}"
 echo -e "\tAttacked access point:\t$target"
-
 if [[ !  -z  $victim  ]]
 then
 	echo -e "\tTargeted user:\t\t$victim"
